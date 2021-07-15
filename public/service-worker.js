@@ -49,11 +49,11 @@ self.addEventListener("fetch", (event) => {
       caches
         .open(DATA_CACHE)
         .then((cache) => {
-          console.log(cache);
+        //   console.log(cache);
           return fetch(event.request)
             .then((response) => {
               if (response.status === 200) {
-                cache.put(event.request.url, response.cone());
+                cache.put(event.request.url, response.clone());
               }
               return response;
             })
@@ -64,6 +64,20 @@ self.addEventListener("fetch", (event) => {
         })
         .catch((err) => console.log(err))
     );
+  } else {
+    event.respondWith(
+      fetch(event.request).catch((err) => {
+        console.log(err);
+        return caches.match(event.request).then((response) => {
+          if (response) {
+            return response;
+          } else if (
+            event.request.headers.get("accept").includes("text/html")
+          ) {
+            return caches.match(event.request.url);
+          }
+        });
+      })
+    );
   }
-  
 });
