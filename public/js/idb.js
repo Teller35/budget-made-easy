@@ -25,7 +25,7 @@ request.onerror = function (event) {
 };
 
 // function to handle promise if now internet connection
-function saveBudget(record) {
+function saveRecord(record) {
   const transaction = db.transaction(["new_budget"], "readwrite");
   const budgetObjectStore = transaction.objectStore("new_budget");
   budgetObjectStore.add(record);
@@ -41,7 +41,7 @@ function uploadBudget() {
     if (getAll.result.length > 0) {
         fetch("/api/transaction", {
             method: "POST",
-            body: JSON.stringify(transaction),
+            body: JSON.stringify(getAll.result),
             headers: {
               Accept: "application/json, text/plain, */*",
               "Content-Type": "application/json"
