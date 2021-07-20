@@ -3,12 +3,12 @@ const VERSION = "V-1";
 const CACHE_NAME = APP_PREFIX + VERSION;
 
 const FILES_TO_CACHE = [
-  "/api/transaction",
+  "/",
   "./index.html",
-  "./manifest.json",
-  "./js/idb.js",
   "./js/index.js",
+  "./js/idb.js",
   "./css/styles.css",
+  "./manifest.json",
   "./icons/icon-192x192.png",
   "./icons/icon-128x128.png",
   "./icons/icon-144x144.png",
@@ -28,37 +28,37 @@ self.addEventListener("install", function (event) {
     );
   });
 
-// self.addEventListener("activate", function (event) {
-//   event.waitUntil(
-//     caches.keys().then(function (keyList) {
-//       let cacheKeepList = keyList.filter(function (key) {
-//         return key.indexOf(APP_PREFIX);
-//       });
-//       cacheKeepList.push(CACHE_NAME);
+self.addEventListener("activate", function (event) {
+  event.waitUntil(
+    caches.keys().then(function (keyList) {
+      let cacheKeepList = keyList.filter(function (key) {
+        return key.indexOf(APP_PREFIX);
+      });
+      cacheKeepList.push(CACHE_NAME);
 
-//       return Promise.all(
-//         keyList.map(function (key, i) {
-//           if (cacheKeepList.indexOf(key) === -1) {
-//             console.log("Deleting cache: " + keyList[i]);
-//             return caches.delete(keyList[i]);
-//           }
-//         })
-//       );
-//     })
-//   );
-// });
+      return Promise.all(
+        keyList.map(function (key, i) {
+          if (cacheKeepList.indexOf(key) === -1) {
+            console.log("Deleting cache: " + keyList[i]);
+            return caches.delete(keyList[i]);
+          }
+        })
+      );
+    })
+  );
+});
 
-// self.addEventListener("fetch", function (event) {
-//   console.log("Fetch request:" + event.request.url);
-//   event.respondWith(
-//     caches.match(event.request).then(function (request) {
-//       if (request) {
-//         console.log("Responding with cache: " + event.request.url);
-//         return request;
-//       } else {
-//         console.log("File is not cached, fetching: " + event.request.url);
-//         return fetch(event.request);
-//       }
-//     })
-//   );
-// });
+self.addEventListener("fetch", function (event) {
+  console.log("Fetch request:" + event.request.url);
+  event.respondWith(
+    caches.match(event.request).then(function (request) {
+      if (request) {
+        console.log("Responding with cache: " + event.request.url);
+        return request;
+      } else {
+        console.log("File is not cached, fetching: " + event.request.url);
+        return fetch(event.request);
+      }
+    })
+  );
+});
