@@ -1,6 +1,7 @@
 const APP_PREFIX = "BudgetTracker-";
 const VERSION = "V-1";
 const CACHE_NAME = APP_PREFIX + VERSION;
+const DATA_CACHE_NAME = APP_PREFIX + "Data_Cache" + VERSION;
 
 const FILES_TO_CACHE = [
   "/",
@@ -20,45 +21,70 @@ const FILES_TO_CACHE = [
 ];
 
 self.addEventListener("install", function (event) {
-    event.waitUntil(
-      caches.open(CACHE_NAME).then(function (cache) {
+  event.waitUntil(
+    caches
+      .open(CACHE_NAME)
+      .then(function (cache) {
         console.log("Installing cache : " + CACHE_NAME);
         return cache.addAll(FILES_TO_CACHE);
       })
-    );
-  });
+      .then(() => self.skipWaiting())
+      .catch((err) => console.log("Error caching files" + err))
+  );
+});
 
 self.addEventListener("activate", function (event) {
   event.waitUntil(
-    caches.keys().then(function (keyList) {
-      let cacheKeepList = keyList.filter(function (key) {
-        return key.indexOf(APP_PREFIX);
-      });
-      cacheKeepList.push(CACHE_NAME);
-
-      return Promise.all(
-        keyList.map(function (key, i) {
-          if (cacheKeepList.indexOf(key) === -1) {
-            console.log("Deleting cache: " + keyList[i]);
-            return caches.delete(keyList[i]);
-          }
-        })
-      );
-    })
+    caches
+      .keys()
+      .then(function (keyList) {
+        return Promise.all(
+          keyList.map((key) => {
+            if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+              return caches.delete(key);
+            }
+          })
+        );
+      })
+      .then(() => self.clients.claim())
+      .catch((err) => console.log(err))
   );
 });
 
 self.addEventListener("fetch", function (event) {
-  console.log("Fetch request:" + event.request.url);
-  event.respondWith(
-    caches.match(event.request).then(function (request) {
-      if (request) {
-        console.log("Responding with cache: " + event.request.url);
-        return request;
-      } else {
-        console.log("File is not cached, fetching: " + event.request.url);
-        return fetch(event.request);
-      }
-    })
-  );
+  if (event.request.url.includes("/api")) {
+    event.respondWith(
+      caches
+        .open(DATA_CACHE_NAME)
+        .then((cache) => {
+          return fetch(event.request)
+            .then((response) => {
+              if (response.status === 200) {
+                cache.put(event.request.url, response.clone());
+              }
+              return response;
+            })
+            .catch((err) => {
+              console.log(err);
+              return cache.match(event.request);
+            });
+        })
+        .catch((err) => console.log(err))
+    );
+  } else {
+    event.respondWith(
+      fetch(event.request).catch((err) => {
+        console.log(err);
+        return caches.match(event.request).then((response) => {
+          if (response) {
+            return response;
+          } else if (
+            event.request.headers.get("accept").includes("text/html")
+          ) {
+            return caches.match(event.request.url);
+          }
+        });
+      })
+    );
+  }
 });
